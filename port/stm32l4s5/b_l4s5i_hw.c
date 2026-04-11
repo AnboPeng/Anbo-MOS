@@ -626,7 +626,10 @@ int BSP_RTC_WakeupTriggered(void)
     return (__HAL_RTC_WAKEUPTIMER_GET_FLAG(&hrtc, RTC_FLAG_WUTF) != 0u) ? 1 : 0;
 }
 
+volatile uint8_t g_rtc_fired = 0;
+
 void RTC_WKUP_IRQHandler(void)
 {
+    g_rtc_fired = 1;
     HAL_RTCEx_WakeUpTimerIRQHandler(&hrtc);
 }
