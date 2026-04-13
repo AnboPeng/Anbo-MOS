@@ -113,6 +113,32 @@ void Anbo_Pool_Free(void *ptr);
 uint32_t Anbo_Pool_FreeCount(void);
 
 /* ================================================================== */
+/*  Reference-count Retain / Release                                   */
+/* ================================================================== */
+
+/**
+ * @brief Increment the reference count of a pool-allocated event.
+ *
+ * Call this inside a subscriber callback if you need to keep the event
+ * alive beyond the current Dispatch cycle (deferred / async consumption).
+ * You MUST call Anbo_Pool_Release() once you are done with the event.
+ *
+ * ISR-safe.
+ */
+void Anbo_Pool_Retain(Anbo_PoolEvent *evt);
+
+/**
+ * @brief Decrement the reference count; free the block when it reaches 0.
+ *
+ * Subscribers that called Anbo_Pool_Retain() MUST call this when they
+ * no longer need the event.  If no Retain was called, the framework
+ * handles Release automatically inside Anbo_Pool_Dispatch().
+ *
+ * ISR-safe.
+ */
+void Anbo_Pool_Release(Anbo_PoolEvent *evt);
+
+/* ================================================================== */
 /*  Async Event Pointer Queue API                                      */
 /* ================================================================== */
 
@@ -157,16 +183,19 @@ int Anbo_EvtQ_IsEmpty(void);
  * @brief Dispatch one pooled event through the EBus, with automatic
  *        reference-count management and pool reclamation.
  *
- * Workflow:
- *   1. Count subscribers for evt->sig on the EBus.
- *   2. Set evt->ref_count = subscriber_count.
- *   3. Publish to EBus; each subscriber callback runs.
- *   4. After each callback, decrement ref_count.
- *   5. When ref_count reaches 0, Anbo_Pool_Free(evt).
+ * Workflow (Retain / Release model):
+ *   1. Set evt->ref_count = 1 (framework reference).
+ *   2. Publish to EBus synchronously; all subscriber callbacks run.
+ *   3. Any subscriber that needs deferred access calls Anbo_Pool_Retain()
+ *      inside its callback, incrementing ref_count.
+ *   4. After Publish returns, the framework calls Anbo_Pool_Release().
+ *      - If no subscriber retained: ref_count drops to 0 → auto-free
+ *        (identical to the previous synchronous behaviour).
+ *      - If a subscriber retained: block survives until that subscriber
+ *        calls Anbo_Pool_Release().
  *
- * If no subscribers exist, the event is freed immediately.
- *
- * @param evt  Pool-allocated event pointer (consumed by this call).
+ * @param evt  Pool-allocated event pointer (consumed by this call
+ *             unless a subscriber retains it).
  */
 void Anbo_Pool_Dispatch(Anbo_PoolEvent *evt);
 

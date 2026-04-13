@@ -219,21 +219,60 @@ int Anbo_EvtQ_IsEmpty(void)
 }
 
 /* ================================================================== */
-/*  3. Framework Dispatch with auto-reclaim                            */
+/*  3. Retain / Release                                                */
+/* ================================================================== */
+
+void Anbo_Pool_Retain(Anbo_PoolEvent *evt)
+{
+    if (evt == NULL) {
+        return;
+    }
+
+    Anbo_Arch_Critical_Enter();
+    evt->ref_count++;
+    Anbo_Arch_Critical_Exit();
+}
+
+/* ------------------------------------------------------------------ */
+
+void Anbo_Pool_Release(Anbo_PoolEvent *evt)
+{
+    uint8_t rc;
+
+    if (evt == NULL) {
+        return;
+    }
+
+    Anbo_Arch_Critical_Enter();
+    if (evt->ref_count > 0u) {
+        evt->ref_count--;
+    }
+    rc = evt->ref_count;
+    Anbo_Arch_Critical_Exit();
+
+    if (rc == 0u) {
+        Anbo_Pool_Free(evt);
+    }
+}
+
+/* ================================================================== */
+/*  4. Framework Dispatch with auto-reclaim                            */
 /* ================================================================== */
 
 /*
- * Dispatch strategy (synchronous EBus model):
- *   1. Build an Anbo_Event with param = Anbo_PoolEvent* (upcast).
- *   2. Anbo_EBus_Publish() broadcasts synchronously — all subscriber
+ * Dispatch strategy (Retain / Release model):
+ *   1. Set ref_count = 1 (framework owns one reference).
+ *   2. Build an Anbo_Event with param = Anbo_PoolEvent* (upcast).
+ *   3. Anbo_EBus_Publish() broadcasts synchronously — all subscriber
  *      callbacks run and return before Publish returns.
- *   3. After Publish returns, the pool block is automatically freed.
+ *   4. Subscribers that need deferred access call Anbo_Pool_Retain()
+ *      inside their callback (ref_count becomes 2, 3, …).
+ *   5. Framework calls Anbo_Pool_Release() — ref_count decrements.
+ *      If no subscriber retained, it reaches 0 → auto-free (backward
+ *      compatible with the original synchronous model).
  *
  * Subscribers downcast evt->param to their derived type:
  *   TempEvent *te = (TempEvent *)evt->param;
- *
- * The ref_count field exists for future async extensions where events
- * may outlive a single Publish call.
  */
 
 void Anbo_Pool_Dispatch(Anbo_PoolEvent *evt)
@@ -243,6 +282,9 @@ void Anbo_Pool_Dispatch(Anbo_PoolEvent *evt)
     if (evt == NULL) {
         return;
     }
+
+    /* Framework holds one reference */
+    evt->ref_count = 1u;
 
     /*
      * Build a lightweight Anbo_Event that carries the pool event pointer
@@ -256,10 +298,11 @@ void Anbo_Pool_Dispatch(Anbo_PoolEvent *evt)
     Anbo_EBus_Publish(&ebus_evt);
 
     /*
-     * All subscribers have finished (synchronous model).
-     * Return the block to the pool automatically.
+     * Release the framework's reference.
+     * If no subscriber called Retain → ref_count drops to 0 → auto-free.
+     * If a subscriber called Retain → block survives until they Release.
      */
-    Anbo_Pool_Free(evt);
+    Anbo_Pool_Release(evt);
 }
 
 #endif /* ANBO_CONF_POOL */
