@@ -58,6 +58,8 @@ anbo/
         ├── b_l4s5i_port.c           # Arch HAL (tick, critical, idle)
         ├── b_l4s5i_hw.c/h           # Clock, GPIO, USART, EXTI init
         ├── b_l4s5i_uart_drv.c/h     # DMA-driven UART driver
+        ├── b_l4s5i_i2c_drv.c/h      # I2C2 master driver (LSM6DSL)
+        ├── b_l4s5i_imu_drv.c/h      # LSM6DSL 6-axis IMU driver (FIFO + wake-up)
         ├── b_l4s5i_flash_drv.c/h    # Internal Flash driver
         ├── b_l4s5i_ospi_drv.c/h     # OSPI NOR controller
         ├── b_l4s5i_ospi_flash_drv.c/h # OSPI NOR Flash driver

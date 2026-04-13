@@ -144,6 +144,8 @@ set(HAL_SRCS
     ${CUBE_HAL_SRC}/stm32l4xx_hal_ospi.c
     ${CUBE_HAL_SRC}/stm32l4xx_hal_adc.c
     ${CUBE_HAL_SRC}/stm32l4xx_hal_adc_ex.c
+    ${CUBE_HAL_SRC}/stm32l4xx_hal_i2c.c
+    ${CUBE_HAL_SRC}/stm32l4xx_hal_i2c_ex.c
     ${CUBE_HAL_SRC}/stm32l4xx_hal_rtc.c
     ${CUBE_HAL_SRC}/stm32l4xx_hal_rtc_ex.c
 )
@@ -160,6 +162,8 @@ add_library(anbo_port_stm32l4s5 STATIC
     b_l4s5i_port.c
     b_l4s5i_hw.c
     b_l4s5i_uart_drv.c
+    b_l4s5i_i2c_drv.c
+    b_l4s5i_imu_drv.c
     b_l4s5i_flash_drv.c
     b_l4s5i_ospi_drv.c
     b_l4s5i_ospi_flash_drv.c
