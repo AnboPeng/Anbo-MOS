@@ -427,4 +427,11 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
         evt.param = NULL;
         Anbo_EBus_Publish(&evt);
     }
+    if (GPIO_Pin == GPIO_PIN_11) {
+        /* LSM6DSL INT1 (PD11) — FIFO watermark reached (silent: high-freq) */
+        Anbo_Event evt;
+        evt.sig   = ANBO_SIG_IMU_INT1;
+        evt.param = NULL;
+        Anbo_EBus_PublishSilent(&evt);
+    }
 }

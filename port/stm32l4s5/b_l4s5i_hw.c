@@ -549,12 +549,13 @@ uint32_t BSP_LPTIM_StopAndRead(void)
 }
 
 /* ================================================================== */
-/*  EXTI15_10 IRQ — User Button (PC13)                                 */
+/*  EXTI15_10 IRQ — User Button (PC13) + IMU INT1 (PD11)              */
 /* ================================================================== */
 
 void EXTI15_10_IRQHandler(void)
 {
     HAL_GPIO_EXTI_IRQHandler(BSP_BTN_PIN);
+    HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_11);
 }
 
 /* ================================================================== */

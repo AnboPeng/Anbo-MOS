@@ -57,6 +57,9 @@ extern "C" {
 /** Signal published when the user button (PC13) is pressed */
 #define ANBO_SIG_USER_BUTTON    0x0020u
 
+/** Signal published when LSM6DSL INT1 (PD11) fires (FIFO watermark) */
+#define ANBO_SIG_IMU_INT1       0x0030u
+
 /* ================================================================== */
 /*  API                                                                */
 /* ================================================================== */
