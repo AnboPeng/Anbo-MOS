@@ -45,6 +45,20 @@
 #endif
 
 /**
+ * @def   ANBO_CONF_TIMER_ISR
+ * @brief Hard-timer mode. 1 = Anbo_Timer_Update() is called from SysTick ISR,
+ *        giving 1 ms resolution independent of main-loop latency.
+ *        0 = caller drives timers from the main loop (soft-timer, original behaviour).
+ *
+ * When enabled, timer callbacks execute in ISR context — they must be short
+ * and must not call blocking APIs.  Ring-buffer–based logging (ANBO_LOGI etc.)
+ * is safe because the log subsystem uses critical sections internally.
+ */
+#ifndef ANBO_CONF_TIMER_ISR
+#define ANBO_CONF_TIMER_ISR         1
+#endif
+
+/**
  * @def   ANBO_CONF_WDT
  * @brief Watchdog monitor switch. 1 = kernel periodically calls Anbo_Arch_WDT_Feed(); 0 = off.
  */

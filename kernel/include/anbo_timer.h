@@ -22,7 +22,7 @@
  */
 /**
  * @file  anbo_timer.h
- * @brief Anbo Kernel — Software Timer (SoftTimer)
+ * @brief Anbo Kernel — Software Timer (SoftTimer / HardTimer)
  *
  * Design highlights:
  *   - Ascending intrusive linked list: sorted by absolute deadline.
@@ -31,6 +31,11 @@
  *   - Fires a callback upon expiry; supports One-shot and Periodic modes.
  *   - Fully static: timer nodes are declared by the user; kernel allocates no memory.
  *   - Hardware isolated: only calls Anbo_Arch_GetTick().
+ *   - Hard-timer mode (ANBO_CONF_TIMER_ISR=1): Update() is called from SysTick ISR,
+ *     giving 1 ms resolution independent of main-loop latency.  Callbacks run in
+ *     ISR context and must be non-blocking.
+ *   - Anbo_Timer_CompensateAll(): snaps all running timer deadlines forward after
+ *     a long sleep, preventing a callback storm on wake.
  *
  * Constraints: C99 / fully static memory / no malloc / no sprintf
  */
@@ -150,6 +155,18 @@ void Anbo_Timer_Update(uint32_t now);
  * Useful for low-power: Anbo_Arch_Idle(Anbo_Timer_MsToNext()).
  */
 uint32_t Anbo_Timer_MsToNext(uint32_t now);
+
+/**
+ * @brief Compensate all running timers after a long sleep (e.g. Stop 2 deep-sleep).
+ *
+ * Any timer whose deadline is already in the past is snapped forward:
+ *   - Periodic: deadline = now + period  (skip missed periods, no burst firing).
+ *   - One-shot: deadline = now + 1       (deferred to next Update, fires once).
+ *
+ * Call this from the deep-sleep resume path BEFORE the main loop resumes
+ * Anbo_Timer_Update() to prevent a callback storm.
+ */
+void Anbo_Timer_CompensateAll(uint32_t now);
 
 #ifdef __cplusplus
 }
