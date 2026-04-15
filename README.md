@@ -15,8 +15,13 @@ Cortex-M microcontrollers.
 - **Event-driven architecture** — publish/subscribe Event Bus with
   hash-bucketed O(1) routing, async event pool with Retain/Release
   reference counting.
-- **Soft timers** — one-shot and periodic timers driven by the system tick,
-  managed via sorted intrusive linked list.
+- **Soft / hard timers** — one-shot and periodic timers managed via sorted
+  intrusive linked list.  `ANBO_CONF_TIMER_ISR=1` (default) drives timers from
+  SysTick ISR for 1 ms accuracy independent of main-loop latency; set to 0 for
+  traditional main-loop polling.
+- **Deep-sleep timer compensation** — `Anbo_Timer_CompensateAll()` snaps all
+  running timer deadlines forward after a long sleep, preventing callback storms
+  on wake.
 - **Finite State Machines** — object-oriented FSMs with entry/exit/event
   callbacks and auto-subscription to EBus signals.
 - **Async logging** — ring-buffered, non-blocking `printf`-style API with
@@ -76,7 +81,7 @@ anbo/
 | **List** | `anbo_list.h` | Linux-style intrusive doubly-linked circular list |
 | **Ring Buffer** | `anbo_rb.h` | Lock-free SPSC FIFO (ISR ↔ main safe) |
 | **Arch HAL** | `anbo_arch.h` | Critical section, tick, watchdog, idle, UART — implemented by each port |
-| **Timer** | `anbo_timer.h` | One-shot & periodic soft timers; O(1) average tick processing |
+| **Timer** | `anbo_timer.h` | One-shot & periodic timers; ISR-driven (hard) or main-loop (soft); deep-sleep compensation |
 | **Event Bus** | `anbo_ebus.h` | Many-to-many pub/sub with hash-bucketed routing |
 | **FSM** | `anbo_fsm.h` | State machine with entry/exit/event handlers |
 | **Log** | `anbo_log.h` | `ANBO_LOGI()`/`LOGW()`/`LOGE()`/`LOGD()` — async ring buffer → sink |
@@ -121,7 +126,9 @@ int main(void)
     ANBO_LOGI("System boot");
 
     for (;;) {
-        Anbo_Timer_Update();
+#if !ANBO_CONF_TIMER_ISR
+        Anbo_Timer_Update(Anbo_Arch_GetTick());  /* soft-timer mode only */
+#endif
         Anbo_Log_Flush();
     }
 }
@@ -134,6 +141,7 @@ All options live in `anbo_config.h` and can be overridden with `-D` flags.
 | Macro | Default | Description |
 |-------|---------|-------------|
 | `ANBO_CONF_IDLE_SLEEP` | 1 | Low-power idle when no timers pending |
+| `ANBO_CONF_TIMER_ISR` | 1 | Hard-timer mode: drive timers from SysTick ISR (1 ms accuracy) |
 | `ANBO_CONF_WDT` | 1 | Software watchdog monitor |
 | `ANBO_CONF_MAX_TIMERS` | 16 | Soft-timer pool capacity |
 | `ANBO_CONF_TICK_HZ` | 1000 | System tick frequency (Hz) |

@@ -41,6 +41,7 @@
 #include "anbo_config.h"
 #include "anbo_ebus.h"
 #include "anbo_log.h"
+#include "anbo_timer.h"
 #include "b_l4s5i_hw.h"
 #include "b_l4s5i_uart_drv.h"
 
@@ -105,6 +106,12 @@ void SysTick_Handler(void)
 {
     s_tick_ms++;
     HAL_IncTick();
+
+#if ANBO_CONF_TIMER_ISR
+    /* Hard-timer mode: drive software timers from ISR for 1 ms accuracy.
+     * Callbacks execute in ISR context — must be short and non-blocking. */
+    Anbo_Timer_Update(s_tick_ms);
+#endif
 }
 
 /* ================================================================== */

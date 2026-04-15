@@ -229,3 +229,48 @@ uint32_t Anbo_Timer_MsToNext(uint32_t now)
 
     return (diff > 0) ? (uint32_t)diff : 0u;
 }
+
+/* ------------------------------------------------------------------ */
+
+void Anbo_Timer_CompensateAll(uint32_t now)
+{
+    Anbo_ListNode tmp_head;
+    Anbo_ListNode *pos;
+    Anbo_ListNode *tmp;
+
+    Anbo_Arch_Critical_Enter();
+
+    if (Anbo_List_IsEmpty(&s_active_list)) {
+        Anbo_Arch_Critical_Exit();
+        return;
+    }
+
+    /* Move all nodes to a temporary list so we can re-sort */
+    Anbo_List_Init(&tmp_head);
+
+    ANBO_LIST_FOR_EACH_SAFE(pos, tmp, &s_active_list) {
+        Anbo_Timer *tmr = ANBO_LIST_ENTRY(pos, Anbo_Timer, node);
+        Anbo_List_Remove(pos);
+
+        /* Snap expired deadlines forward */
+        if (time_diff(tmr->deadline, now) <= 0) {
+            if (tmr->mode == ANBO_TIMER_PERIODIC) {
+                tmr->deadline = now + tmr->period;
+            } else {
+                /* One-shot: let it fire once on the very next Update */
+                tmr->deadline = now + 1u;
+            }
+        }
+
+        Anbo_List_InsertTail(&tmp_head, pos);
+    }
+
+    /* Re-insert in ascending deadline order */
+    ANBO_LIST_FOR_EACH_SAFE(pos, tmp, &tmp_head) {
+        Anbo_List_Remove(pos);
+        Anbo_Timer *tmr = ANBO_LIST_ENTRY(pos, Anbo_Timer, node);
+        timer_insert_sorted(tmr);
+    }
+
+    Anbo_Arch_Critical_Exit();
+}
