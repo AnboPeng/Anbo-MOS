@@ -177,6 +177,11 @@ The included port targets the **B-L4S5I-IOT01A** discovery board:
 - Internal Flash + external OSPI NOR (MX25R6435F) drivers
 - STM32 HAL / CMSIS auto-downloaded by CMake on first build
 
+## Documentation
+
+- [ Anbo Kernel Porting Tips](doc/PORTING_TIPS.md)
+- [ Anbo Kernel Porting Guide](doc/PORTING_GUIDE.md)
+
 ## License
 
 MIT — see [LICENSE](../LICENSE).
